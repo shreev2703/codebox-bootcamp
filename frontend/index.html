@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeBox Users</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; }
+    form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+    input { padding: 6px 8px; flex: 1; min-width: 140px; }
+    button { padding: 6px 12px; }
+    ul { padding-left: 20px; }
+    .error { color: #b00020; }
+    .muted { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>CodeBox Users</h1>
+
+  <form id="user-form">
+    <input id="name" placeholder="Name" required>
+    <input id="email" type="email" placeholder="Email" required>
+    <button type="submit">Add user</button>
+  </form>
+  <p id="form-message"></p>
+
+  <div id="status" class="muted">Loading...</div>
+  <ul id="user-list"></ul>
+
+  <script>
+    const API_URL = "http://localhost:3000/api/users";
+    const statusEl = document.getElementById("status");
+    const listEl = document.getElementById("user-list");
+    const form = document.getElementById("user-form");
+    const formMessage = document.getElementById("form-message");
+
+    async function loadUsers() {
+      statusEl.textContent = "Loading...";
+      statusEl.className = "muted";
+      listEl.innerHTML = "";
+
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+        const users = await res.json();
+
+        if (users.length === 0) {
+          statusEl.textContent = "No users yet. Add one above.";
+          return;
+        }
+
+        statusEl.textContent = "";
+        for (const user of users) {
+          const li = document.createElement("li");
+          li.textContent = `${user.name} (${user.email})`;
+          listEl.appendChild(li);
+        }
+      } catch (err) {
+        statusEl.textContent = "Could not load users. Is the backend running on port 3000?";
+        statusEl.className = "error";
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      formMessage.textContent = "";
+      formMessage.className = "";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Could not add user");
+
+        form.reset();
+        formMessage.textContent = `Added ${data.name}`;
+        loadUsers();
+      } catch (err) {
+        formMessage.textContent = err.message === "Failed to fetch"
+          ? "Could not reach the backend."
+          : err.message;
+        formMessage.className = "error";
+      }
+    });
+
+    loadUsers();
+  </script>
+</body>
+</html>
