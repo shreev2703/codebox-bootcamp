@@ -1,4 +1,12 @@
-import { greet } from "./hello.js";
+import express from "express";
 
-console.log("CodeBox bootcamp app started");
-console.log(greet("Shreevatson"));
+const app = express();
+const PORT = 3000;
+
+app.get("/", (req, res) => {
+  res.send("Hello from CodeBox!");
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
