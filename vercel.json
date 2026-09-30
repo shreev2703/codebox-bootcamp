@@ -1,5 +1,4 @@
 {
-  "installCommand": "npm install --prefix backend",
   "buildCommand": "",
   "outputDirectory": "frontend",
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }]
