@@ -12,8 +12,12 @@ export function getUserById(id) {
   return User.findById(id);
 }
 
-export function createUser({ name, email }) {
-  return User.create({ name, email });
+export function getUserByEmailWithPassword(email) {
+  return User.findOne({ email: email.trim().toLowerCase() }).select("+password");
+}
+
+export function createUser({ name, email, password }) {
+  return User.create({ name, email, password });
 }
 
 export function updateUser(id, updates) {

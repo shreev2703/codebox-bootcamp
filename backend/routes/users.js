@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAuth } from "../middleware/auth.js";
 import {
   isValidId,
   getAllUsers,
@@ -29,7 +30,7 @@ router.get("/:id", async (req, res) => {
   res.json(user);
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   const { name, email } = req.body || {};
   if (!name || !email) {
     return res.status(400).json({ error: "name and email are required" });
@@ -38,7 +39,7 @@ router.post("/", async (req, res) => {
   res.status(201).json(user);
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireAuth, async (req, res) => {
   const { name, email } = req.body || {};
   const updates = {};
   if (name !== undefined) updates.name = name;
@@ -53,7 +54,7 @@ router.put("/:id", async (req, res) => {
   res.json(user);
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireAuth, async (req, res) => {
   const user = await deleteUser(req.params.id);
   if (!user) {
     return res.status(404).json({ error: "User not found" });

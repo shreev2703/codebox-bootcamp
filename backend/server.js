@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import usersRouter from "./routes/users.js";
+import authRouter from "./routes/auth.js";
 import { requireAuth } from "./middleware/auth.js";
 import { connectDB, isConnected } from "./db/database.js";
 
@@ -20,6 +21,11 @@ app.get("/", (req, res) => {
   res.send("Hello from CodeBox!");
 });
 
+app.use("/api", async (req, res, next) => {
+  await connectDB(process.env.DATABASE_URL);
+  next();
+});
+
 app.get("/api/health", (req, res) => {
   if (!isConnected()) {
     return res.status(503).json({ status: "error", db: "disconnected" });
@@ -27,10 +33,11 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", db: "connected" });
 });
 
+app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 
 app.get("/api/me", requireAuth, (req, res) => {
-  res.json({ id: req.user.sub, name: "Alex", role: "student" });
+  res.json({ id: req.user.sub, name: req.user.name, email: req.user.email });
 });
 
 // Express 5 forwards rejected promises from async handlers here.
@@ -48,13 +55,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Something went wrong" });
 });
 
-try {
-  await connectDB(process.env.DATABASE_URL);
-} catch (err) {
-  console.error(`Could not connect to MongoDB: ${err.message}`);
-  process.exit(1);
-}
+export default app;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// On Vercel the app is imported by api/index.js instead of listening itself.
+if (!process.env.VERCEL) {
+  try {
+    await connectDB(process.env.DATABASE_URL);
+  } catch (err) {
+    console.error(`Could not connect to MongoDB: ${err.message}`);
+    process.exit(1);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}

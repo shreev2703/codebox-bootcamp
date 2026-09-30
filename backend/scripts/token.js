@@ -6,7 +6,7 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-const token = jwt.sign({ sub: 1 }, process.env.JWT_SECRET, {
+const token = jwt.sign({ sub: "1", name: "Alex", email: "alex@example.com" }, process.env.JWT_SECRET, {
   algorithm: "HS256",
   expiresIn: "15m",
 });

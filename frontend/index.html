@@ -23,6 +23,7 @@
     }
 
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
 
     body {
       margin: 0;
@@ -64,7 +65,10 @@
     h1 { font-size: 24px; margin: 0; letter-spacing: -0.02em; }
     .subtitle { margin: 3px 0 0; color: var(--muted); font-size: 14px; }
 
-    .status {
+    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .status,
+    .account {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -75,6 +79,9 @@
       color: var(--muted);
       background: var(--panel);
     }
+
+    .account { padding: 4px 4px 4px 14px; }
+    .account strong { color: var(--text); font-weight: 600; }
 
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
     .status.online .dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
@@ -95,7 +102,30 @@
     }
 
     .card h2 { font-size: 17px; margin: 0 0 4px; letter-spacing: -0.01em; }
-    .hint { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+    .hint { color: var(--muted); font-size: 13px; margin: 0 0 20px; line-height: 1.5; }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel-2);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--panel); color: var(--text); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
 
     .field { margin-bottom: 14px; }
     label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
@@ -141,6 +171,17 @@
 
     .btn-ghost:hover { border-color: var(--muted); }
 
+    .btn-small {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .btn-small:hover { border-color: var(--muted); }
+
     .list-header {
       display: flex;
       align-items: center;
@@ -182,6 +223,17 @@
     .info { flex: 1; min-width: 0; }
     .name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .meta { color: var(--muted); font-size: 13px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .you {
+      margin-left: 6px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      vertical-align: 2px;
+    }
 
     .row-actions { display: flex; align-items: center; gap: 4px; }
 
@@ -273,11 +325,43 @@
           <p class="subtitle">Manage users stored in MongoDB Atlas</p>
         </div>
       </div>
-      <div class="status" id="status"><span class="dot"></span><span id="status-text">Checking server...</span></div>
+      <div class="header-right">
+        <div class="status" id="status"><span class="dot"></span><span id="status-text">Checking server...</span></div>
+        <div class="account" id="account" hidden>
+          <span>Signed in as <strong id="account-name"></strong></span>
+          <button type="button" class="btn-small" id="logout-btn">Log out</button>
+        </div>
+      </div>
     </header>
 
     <main class="layout">
-      <section class="card">
+      <section class="card" id="auth-card">
+        <div class="tabs">
+          <button type="button" class="tab active" data-mode="login">Log in</button>
+          <button type="button" class="tab" data-mode="register">Sign up</button>
+        </div>
+        <h2 id="auth-title">Welcome back</h2>
+        <p class="hint" id="auth-hint">Log in to add, edit and delete users.</p>
+        <form id="auth-form">
+          <div class="field" id="auth-name-field" hidden>
+            <label for="auth-name">Name</label>
+            <input id="auth-name" placeholder="Alex Smith" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="auth-email">Email</label>
+            <input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="auth-password">Password</label>
+            <input id="auth-password" type="password" placeholder="At least 8 characters" autocomplete="current-password" minlength="8" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="auth-submit">Log in</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" id="user-card" hidden>
         <h2 id="form-title">Add a user</h2>
         <p class="hint" id="form-hint">Name and email are required. Emails must be unique.</p>
         <form id="user-form">
@@ -308,14 +392,31 @@
       </section>
     </main>
 
-    <footer>Node.js &middot; Express &middot; MongoDB Atlas &middot; JWT</footer>
+    <footer>Node.js &middot; Express &middot; MongoDB Atlas &middot; JWT auth</footer>
   </div>
 
   <div id="toasts"></div>
 
   <script>
-    const API_URL = "http://localhost:3000/api";
+    const isLocal = location.protocol === "file:" || ["localhost", "127.0.0.1"].includes(location.hostname);
+    const API_URL = isLocal ? "http://localhost:3000/api" : "/api";
+    const SESSION_KEY = "codebox-session";
 
+    const authCard = document.getElementById("auth-card");
+    const authForm = document.getElementById("auth-form");
+    const authTabs = document.querySelectorAll(".tab");
+    const authTitle = document.getElementById("auth-title");
+    const authHint = document.getElementById("auth-hint");
+    const authNameField = document.getElementById("auth-name-field");
+    const authName = document.getElementById("auth-name");
+    const authEmail = document.getElementById("auth-email");
+    const authPassword = document.getElementById("auth-password");
+    const authSubmit = document.getElementById("auth-submit");
+    const accountEl = document.getElementById("account");
+    const accountName = document.getElementById("account-name");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    const userCard = document.getElementById("user-card");
     const form = document.getElementById("user-form");
     const nameInput = document.getElementById("name");
     const emailInput = document.getElementById("email");
@@ -337,7 +438,41 @@
     };
 
     let users = [];
+    let loaded = false;
     let editingId = null;
+    let authMode = "login";
+    let session = loadSession();
+
+    function loadSession() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SESSION_KEY));
+        if (!saved) return null;
+        const payload = JSON.parse(atob(saved.token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        return payload.exp * 1000 > Date.now() ? saved : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveSession(value) {
+      session = value;
+      try {
+        if (value) localStorage.setItem(SESSION_KEY, JSON.stringify(value));
+        else localStorage.removeItem(SESSION_KEY);
+      } catch {}
+      renderAuth();
+    }
+
+    function authHeaders() {
+      return session ? { Authorization: `Bearer ${session.token}` } : {};
+    }
+
+    function checkUnauthorized(res) {
+      if (res.status === 401) {
+        saveSession(null);
+        throw new Error("Your session expired. Please log in again.");
+      }
+    }
 
     function initials(name) {
       return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0].toUpperCase()).join("");
@@ -374,6 +509,30 @@
         statusEl.className = "status offline";
         statusText.textContent = "Server offline";
       }
+    }
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      const isRegister = mode === "register";
+      authTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.mode === mode));
+      authNameField.hidden = !isRegister;
+      authName.required = isRegister;
+      authTitle.textContent = isRegister ? "Create an account" : "Welcome back";
+      authHint.textContent = isRegister
+        ? "Sign up to start managing users. Your account shows up in the list."
+        : "Log in to add, edit and delete users.";
+      authSubmit.textContent = isRegister ? "Create account" : "Log in";
+      authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+    }
+
+    function renderAuth() {
+      const loggedIn = Boolean(session);
+      authCard.hidden = loggedIn;
+      userCard.hidden = !loggedIn;
+      accountEl.hidden = !loggedIn;
+      accountName.textContent = loggedIn ? session.user.name : "";
+      if (!loggedIn && editingId) resetForm();
+      if (loaded) renderUsers();
     }
 
     function renderSkeleton() {
@@ -415,7 +574,7 @@
       listEl.innerHTML = "";
 
       if (users.length === 0) {
-        return renderState("No users yet", "Add your first user with the form.");
+        return renderState("No users yet", session ? "Add your first user with the form." : "Sign up to add the first one.");
       }
       if (visible.length === 0) {
         return renderState("No matches", `Nothing matches "${searchInput.value.trim()}".`);
@@ -441,16 +600,25 @@
       const name = document.createElement("div");
       name.className = "name";
       name.textContent = user.name;
+      if (session && session.user.id === user._id) {
+        const you = document.createElement("span");
+        you.className = "you";
+        you.textContent = "You";
+        name.appendChild(you);
+      }
       const meta = document.createElement("div");
       meta.className = "meta";
       meta.textContent = `${user.email} · Joined ${formatDate(user.createdAt)}`;
       info.append(name, meta);
 
-      const actions = document.createElement("div");
-      actions.className = "row-actions";
-      showRowButtons(actions, user);
+      li.append(avatar, info);
 
-      li.append(avatar, info, actions);
+      if (session) {
+        const actions = document.createElement("div");
+        actions.className = "row-actions";
+        showRowButtons(actions, user);
+        li.appendChild(actions);
+      }
       return li;
     }
 
@@ -512,13 +680,17 @@
       renderUsers();
     }
 
-    function stopEdit() {
+    function resetForm() {
       editingId = null;
       form.reset();
       formTitle.textContent = "Add a user";
       formHint.textContent = "Name and email are required. Emails must be unique.";
       submitBtn.textContent = "Add user";
       cancelBtn.hidden = true;
+    }
+
+    function stopEdit() {
+      resetForm();
       renderUsers();
     }
 
@@ -529,6 +701,7 @@
         const res = await fetch(`${API_URL}/users`);
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
         users = await res.json();
+        loaded = true;
         renderUsers();
       } catch {
         countEl.textContent = "";
@@ -538,7 +711,8 @@
 
     async function deleteUser(user) {
       try {
-        const res = await fetch(`${API_URL}/users/${user._id}`, { method: "DELETE" });
+        const res = await fetch(`${API_URL}/users/${user._id}`, { method: "DELETE", headers: authHeaders() });
+        checkUnauthorized(res);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Could not delete user");
 
@@ -561,9 +735,10 @@
       try {
         const res = await fetch(isEdit ? `${API_URL}/users/${editingId}` : `${API_URL}/users`, {
           method: isEdit ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({ name: nameInput.value.trim(), email: emailInput.value.trim() }),
         });
+        checkUnauthorized(res);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Request failed");
 
@@ -576,16 +751,54 @@
         stopEdit();
         showToast(isEdit ? `Updated ${data.name}` : `Added ${data.name}`);
       } catch (err) {
-        submitBtn.textContent = label;
+        submitBtn.textContent = session ? label : "Add user";
         showToast(friendlyError(err), "error");
       } finally {
         submitBtn.disabled = false;
       }
     });
 
+    authForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const isRegister = authMode === "register";
+      const label = authSubmit.textContent;
+      authSubmit.disabled = true;
+      authSubmit.textContent = isRegister ? "Creating account..." : "Logging in...";
+
+      try {
+        const body = { email: authEmail.value.trim(), password: authPassword.value };
+        if (isRegister) body.name = authName.value.trim();
+
+        const res = await fetch(`${API_URL}/auth/${isRegister ? "register" : "login"}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+
+        authForm.reset();
+        setAuthMode("login");
+        saveSession(data);
+        showToast(isRegister ? `Welcome, ${data.user.name}` : `Logged in as ${data.user.name}`);
+        if (isRegister) loadUsers();
+      } catch (err) {
+        showToast(friendlyError(err), "error");
+      } finally {
+        authSubmit.disabled = false;
+        authSubmit.textContent = label;
+      }
+    });
+
+    authTabs.forEach((tab) => tab.addEventListener("click", () => setAuthMode(tab.dataset.mode)));
+    logoutBtn.addEventListener("click", () => {
+      saveSession(null);
+      showToast("Logged out");
+    });
     cancelBtn.addEventListener("click", stopEdit);
     searchInput.addEventListener("input", renderUsers);
 
+    renderAuth();
     loadUsers();
     setInterval(checkHealth, 10000);
   </script>
