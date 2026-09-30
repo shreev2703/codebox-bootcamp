@@ -78,17 +78,26 @@ curl -i http://localhost:3000/api/health
 curl -i http://localhost:3000/api/users
 curl -i http://localhost:3000/api/users/<id>
 
-curl -i -X POST http://localhost:3000/api/users \
+curl -i -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"Alex","email":"alex@example.com"}'
+  -d '{"name":"Alex","email":"alex@example.com","password":"password123"}'
+
+curl -i -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alex@example.com","password":"password123"}'
+
+TOKEN=<token from register or login>
+
+curl -i -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"Sam","email":"sam@example.com"}'
 
 curl -i -X PUT http://localhost:3000/api/users/<id> \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Alex Smith"}'
+  -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"Sam Lee"}'
 
-curl -i -X DELETE http://localhost:3000/api/users/<id>
+curl -i -X DELETE http://localhost:3000/api/users/<id> -H "Authorization: Bearer $TOKEN"
 
-TOKEN=$(npm run -s token)
 curl -i http://localhost:3000/api/me -H "Authorization: Bearer $TOKEN"
 ```
 
